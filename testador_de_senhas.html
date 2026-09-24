@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testador de Senhas</title>
+<style>
+  :root { --bg:#0E1726; --card:#16233A; --line:#2A3B57; --text:#F2F5EF; --muted:#AFC0D6; --green:#3DDC84; --amber:#F2B544; --red:#FF6B6B; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Arial, Helvetica, sans-serif; min-height:100vh; display:flex; justify-content:center; padding:40px 16px; }
+  main { width:100%; max-width:760px; }
+  .tag { font-family:'Courier New', monospace; color:var(--green); letter-spacing:2px; text-transform:uppercase; font-size:14px; margin:0 0 8px; }
+  h1 { font-family:'Courier New', monospace; font-size:40px; margin:0 0 8px; }
+  .aviso { color:var(--amber); margin:0 0 28px; font-size:17px; }
+  input { width:100%; font-family:'Courier New', monospace; font-size:28px; padding:18px 20px; border-radius:12px; border:2px solid var(--line); background:var(--card); color:var(--text); outline:none; }
+  input:focus { border-color:var(--green); }
+  .res { margin-top:28px; background:var(--card); border:2px solid var(--line); border-radius:16px; padding:28px; }
+  .rotulo { color:var(--muted); font-size:17px; margin:0 0 6px; }
+  .tempo { font-family:'Courier New', monospace; font-size:44px; font-weight:bold; margin:0 0 18px; line-height:1.15; }
+  .barra { height:14px; background:#0B1220; border-radius:8px; overflow:hidden; margin-bottom:22px; }
+  .barra div { height:100%; width:0; transition:width .25s, background .25s; }
+  .info { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; }
+  .info div { background:#0B1220; border-radius:10px; padding:12px 14px; }
+  .info b { display:block; font-size:22px; margin-top:4px; font-family:'Courier New', monospace; }
+  .info span { color:var(--muted); font-size:14px; }
+  .dica { margin-top:20px; font-size:17px; line-height:1.45; }
+  .rodape { color:var(--muted); font-size:13px; margin-top:26px; line-height:1.5; }
+  @media (max-width:560px) { .info { grid-template-columns:1fr; } .tempo { font-size:32px; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="tag">atividade 2 · laboratório</p>
+  <h1>Quanto tempo o hacker leva?</h1>
+  <p class="aviso">⚠ NUNCA digite sua senha de verdade. Invente uma parecida.</p>
+  <input id="s" type="text" placeholder="digite uma senha inventada" autocomplete="off" spellcheck="false">
+  <div class="res">
+    <p class="rotulo">Um computador levaria para quebrar:</p>
+    <p class="tempo" id="t">—</p>
+    <div class="barra"><div id="b"></div></div>
+    <div class="info">
+      <div><span>Tamanho</span><b id="len">0 caracteres</b></div>
+      <div><span>Tipos de caractere</span><b id="tipos">—</b></div>
+      <div><span>Combinações possíveis</span><b id="comb">—</b></div>
+      <div><span>Símbolos usados</span><b id="alf">—</b></div>
+    </div>
+    <p class="dica" id="d">Digite uma senha para começar.</p>
+  </div>
+  <p class="rodape">Cálculo: computador testando 10 bilhões de senhas por segundo. Senhas aleatórias: força bruta testando todas as combinações. Palavra ou nome + números/símbolos: ataque de dicionário, que testa milhões de palavras e nomes com variações. Nada do que você digita sai deste computador.</p>
+</main>
+<script>
+const COMUNS = ['123456','123456789','12345678','12345','1234567','1234567890','1234','senha','senha123','password','admin','qwerty','123123','111111','abc123','000000','654321','102030','iloveyou','brasil','flamengo','gremio','inter','corinthians','palmeiras','santos','saopaulo','vasco','cruzeiro','amor','teamo','minecraft','freefire','roblox','naruto'];
+const RAPIDEZ = 1e10;
+function fmtNum(n) {
+  if (n < 1e6) return Math.round(n).toLocaleString('pt-BR');
+  const u = [[1e24,'septilhão','septilhões'],[1e21,'sextilhão','sextilhões'],[1e18,'quintilhão','quintilhões'],[1e15,'quatrilhão','quatrilhões'],[1e12,'trilhão','trilhões'],[1e9,'bilhão','bilhões'],[1e6,'milhão','milhões']];
+  for (const [v, um, varios] of u) if (n >= v) { const x = n / v; if (x >= 1000) return n.toExponential(1).replace('.', ',').replace('e+', ' × 10^'); return x.toLocaleString('pt-BR', {maximumFractionDigits:1}) + ' ' + (x < 2 ? um : varios); }
+}
+function fmtTempo(s) {
+  if (s < 1) return 'instantâneo';
+  const min = 60, h = 3600, d = 86400, a = 31557600;
+  if (s < min) return Math.round(s) + (Math.round(s) === 1 ? ' segundo' : ' segundos');
+  if (s < h) { const m = Math.round(s/min); return m + (m === 1 ? ' minuto' : ' minutos'); }
+  if (s < d) { const x = Math.round(s/h); return x + (x === 1 ? ' hora' : ' horas'); }
+  if (s < a) { const x = Math.round(s/d); return x + (x === 1 ? ' dia' : ' dias'); }
+  const anos = s / a;
+  if (anos < 1000) return Math.round(anos) + (Math.round(anos) === 1 ? ' ano' : ' anos');
+  if (anos < 1e6) return (anos/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1}) + ' mil anos';
+  if (anos < 1e9) return (anos/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1}) + (anos/1e6 < 2 ? ' milhão de anos' : ' milhões de anos');
+  if (anos < 1e12) return (anos/1e9).toLocaleString('pt-BR',{maximumFractionDigits:1}) + (anos/1e9 < 2 ? ' bilhão de anos' : ' bilhões de anos');
+  if (anos < 1e15) return (anos/1e12).toLocaleString('pt-BR',{maximumFractionDigits:1}) + (anos/1e12 < 2 ? ' trilhão de anos' : ' trilhões de anos');
+  return 'mais que a idade do universo';
+}
+function limpa(x) { return x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+const $ = id => document.getElementById(id);
+$('s').addEventListener('input', () => {
+  const p = $('s').value;
+  const L = [...p].length;
+  let alf = 0; const tipos = [];
+  if (/[a-z]/.test(p)) { alf += 26; tipos.push('minúsc.'); }
+  if (/[A-Z]/.test(p)) { alf += 26; tipos.push('MAIÚSC.'); }
+  if (/[0-9]/.test(p)) { alf += 10; tipos.push('números'); }
+  if (/[^a-zA-Z0-9]/.test(p)) { alf += 33; tipos.push('símbolos'); }
+  $('len').textContent = L + (L === 1 ? ' caractere' : ' caracteres');
+  $('tipos').textContent = tipos.length ? tipos.join(', ') : '—';
+  $('alf').textContent = alf || '—';
+  if (!L) { $('t').textContent = '—'; $('t').style.color = ''; $('comb').textContent = '—'; $('b').style.width = '0'; $('d').textContent = 'Digite uma senha para começar.'; return; }
+  const comb = Math.pow(alf, L);
+  $('comb').textContent = fmtNum(comb);
+  let seg = comb / RAPIDEZ;
+  const base = limpa(p).replace(/[^a-z0-9]/g, '');
+  const semNum = base.replace(/[0-9]+$/, '');
+  let dica;
+  const comum = COMUNS.includes(base) || COMUNS.includes(semNum) || /^(\d)\1+$/.test(p);
+  // Ataque de dicionário com regras: uma palavra/nome (com letras trocadas por números, tipo C4rl0s)
+  // + números ou símbolos antes ou depois. É assim que ferramentas reais testam primeiro.
+  const leet = p.replace(/4/g,'a').replace(/@(?=[a-zA-Z])/g,'a').replace(/3/g,'e').replace(/1(?=[a-zA-Z])/g,'i').replace(/0(?=[a-zA-Z])/g,'o').replace(/\$(?=[a-zA-Z])/g,'s');
+  const m = p.match(/^([^a-zA-Z]{0,8})([a-zA-Z]{1,14})([^a-zA-Z]{0,8})$/) || leet.match(/^([^a-zA-Z]{0,8})([a-zA-Z]{1,14})([^a-zA-Z]{0,8})$/);
+  let dictSeg = Infinity;
+  if (m && m[1].length + m[3].length > 0) dictSeg = 1e7 * 20 * Math.pow(20, m[1].length + m[3].length) / RAPIDEZ; // 10 milhões de palavras e nomes × 20 variações × 20 opções comuns (números e símbolos mais usados) por caractere extra
+  const padraoNomeAno = isFinite(dictSeg) && dictSeg < seg;
+  if (comum) { seg = 0; dica = '❌ Essa é uma das senhas mais usadas do mundo. Está na lista do ataque de dicionário: cai na hora.'; }
+  else if (padraoNomeAno) { seg = dictSeg; dica = '⚠ Uma palavra ou nome + números/símbolos é o padrão mais usado. O hacker não testa letra por letra: ele usa uma lista de milhões de palavras e nomes e acrescenta números e símbolos no começo e no fim. Por isso cai rápido. Use uma frase-senha com várias palavras.'; }
+  else if (L < 12) dica = 'Dica: aumente o TAMANHO. Cada caractere a mais multiplica o tempo.';
+  else dica = '✅ Senha longa! Agora é só conseguir lembrar dela sem anotar.';
+  $('t').textContent = fmtTempo(seg);
+  const nivel = Math.max(0, Math.min(1, Math.log10(seg + 1) / 16));
+  const cor = nivel < 0.35 ? 'var(--red)' : nivel < 0.6 ? 'var(--amber)' : 'var(--green)';
+  $('t').style.color = cor; $('b').style.background = cor; $('b').style.width = Math.max(4, nivel * 100) + '%';
+  $('d').textContent = dica;
+});
+</script>
+</body>
+</html>
